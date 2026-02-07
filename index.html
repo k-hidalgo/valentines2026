@@ -48,6 +48,8 @@
       border-radius: 22px;
       text-align: center;
       box-shadow: 0 18px 60px rgba(0,0,0,.15);
+      position: relative;
+      z-index: 1;
     }
 
     .art {
@@ -62,6 +64,7 @@
       margin: 12px 0 18px;
     }
 
+    /* Keep the section for layout, but buttons will be fixed-position */
     .button-zone {
       position: relative;
       width: min(520px, 92%);
@@ -70,10 +73,9 @@
       touch-action: none;
     }
 
+    /* Buttons can now move anywhere on the screen */
     button {
-      position: absolute;
-      top: 50%;
-      transform: translateY(-50%);
+      position: fixed; /* relative to the whole screen */
       padding: 16px 24px;
       font-size: 18px;
       font-weight: 800;
@@ -84,17 +86,20 @@
       user-select: none;
       -webkit-tap-highlight-color: transparent;
       transition: transform .12s ease, background .12s ease;
+      z-index: 50; /* above the card */
     }
 
     #yesBtn {
-      left: 18%;
+      left: 35vw;
+      top: 62vh;
       background: var(--yes);
       color: #fff;
     }
     #yesBtn:hover { background: var(--yesHover); }
 
     #noBtn {
-      left: 62%;
+      left: 55vw;
+      top: 62vh;
       background: #e5e7eb;
       color: #111827;
     }
@@ -116,13 +121,7 @@
       margin: 10px 0;
     }
 
-    /* .fireworks {
-      width: min(380px, 90vw);
-      margin: 0 auto;
-      display: block;
-    } */
-
-        /* PERSONAL PHOTO (HIDDEN UNTIL YES) */
+    /* PERSONAL PHOTO (HIDDEN UNTIL YES) */
     #personalPhoto { display: none; }
 
     .personal-photo {
@@ -185,23 +184,17 @@
 
     <h1>flaca will you be my valentine?</h1>
 
+    <!-- This section stays, but buttons can roam the whole page -->
     <section class="button-zone" id="zone">
       <button id="yesBtn">Yes</button>
       <button id="noBtn">No</button>
     </section>
 
-    <!-- HINT -->
     <div class="hint" id="hint">Please don't say “No”...</div>
 
     <section class="result" id="result">
       <h2>YAY! 🎉</h2>
-      <!-- <img
-        class="fireworks"
-        src="https://media.giphy.com/media/26ufdipQqU2lhNA4g/giphy.gif"
-        alt="Fireworks"
-      /> -->
 
-      <!-- PERSONAL PHOTO (SHOWS AFTER YES) -->
       <img
         id="personalPhoto"
         class="personal-photo"
@@ -212,11 +205,12 @@
   </main>
 
   <script>
-    const zone = document.getElementById("zone");
+    const zone = document.getElementById("zone"); // kept for YES click hide
     const yesBtn = document.getElementById("yesBtn");
     const noBtn = document.getElementById("noBtn");
     const result = document.getElementById("result");
     const hint = document.getElementById("hint");
+    const personalPhoto = document.getElementById("personalPhoto");
 
     /* ---------- CONFETTI ---------- */
     const confettiCanvas = document.getElementById("confettiCanvas");
@@ -267,16 +261,16 @@
     let yesScale = 1;
     function growYes() {
       yesScale = Math.min(2.2, yesScale + 0.1);
-      yesBtn.style.transform = `translateY(-50%) scale(${yesScale})`;
+      // Keep it growing without y-translate since use fixed top/left now
+      yesBtn.style.transform = `scale(${yesScale})`;
     }
 
-    /* ---------- NO BUTTON RUNS AWAY ---------- */
+    /* ---------- NO BUTTON RUNS AWAY (FULL SCREEN) ---------- */
     function clamp(n, min, max) {
       return Math.max(min, Math.min(max, n));
     }
 
     function moveNo(px, py) {
-      const z = zone.getBoundingClientRect();
       const b = noBtn.getBoundingClientRect();
 
       let dx = (b.left + b.width / 2) - px;
@@ -285,47 +279,48 @@
       dx /= mag;
       dy /= mag;
 
-      let newLeft = (b.left - z.left) + dx * 150;
-      let newTop  = (b.top - z.top) + dy * 150;
+      let newLeft = b.left + dx * 180;
+      let newTop  = b.top  + dy * 180;
 
-      newLeft = clamp(newLeft, 0, z.width - b.width);
-      newTop  = clamp(newTop, 0, z.height - b.height);
+      newLeft = clamp(newLeft, 0, window.innerWidth - b.width);
+      newTop  = clamp(newTop, 0, window.innerHeight - b.height);
 
       noBtn.style.left = newLeft + "px";
-      noBtn.style.top = newTop + "px";
-      noBtn.style.transform = "none";
+      noBtn.style.top  = newTop + "px";
 
       growYes();
     }
 
-    zone.addEventListener("pointermove", e => {
+    document.addEventListener("pointermove", e => {
       const b = noBtn.getBoundingClientRect();
       const d = Math.hypot(
         (b.left + b.width / 2) - e.clientX,
         (b.top + b.height / 2) - e.clientY
       );
-      if (d < 140) moveNo(e.clientX, e.clientY);
+      if (d < 160) moveNo(e.clientX, e.clientY);
     });
 
     noBtn.addEventListener("click", e => e.preventDefault());
 
     /* ---------- YES CLICK ---------- */
     yesBtn.addEventListener("click", () => {
+      // Hide both buttons/zone and hint
       zone.style.display = "none";
-      hint.style.display = "none";     // HIDE THE HINT
-      result.style.display = "block";
+      hint.style.display = "none";
 
-      // SHOW PERSONAL PHOTO
+      // Also hide the fixed buttons themselves 
+      yesBtn.style.display = "none";
+      noBtn.style.display = "none";
+
+      result.style.display = "block";
       personalPhoto.style.display = "block";
-      
+
       resizeConfettiCanvas();
       fullScreenConfetti();
     });
   </script>
 </body>
 </html>
-
-
 
 
 
